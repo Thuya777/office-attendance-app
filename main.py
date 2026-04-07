@@ -14,18 +14,17 @@ else:
     st.error("Secrets configuration missing!")
     st.stop()
 
-# ဒီနေရာမှာ ခုနက ID ကို ထည့်ပါ
-SPREADSHEET_ID = "1Lnh_L7v7vDs-6WRosRlKXzNSoqANljgAKRc5VvAIpFs" 
+# ပုံ ထဲက သင့်ရဲ့ ID ကို ထည့်ပေးထားပါတယ်
+SPREADSHEET_ID = "1Lnh_L7v7Vds-6WRosRIKXzNSoqANLjgAKRc5VvAIpFs" 
 
 st.sidebar.title("⏰ ဝန်ထမ်း ရုံးတက်/ရုံးဆင်း App")
 menu = st.sidebar.radio("သွားလိုသည့် အပိုင်းကို ရွေးပါ", ["ရုံးတက် ရုံးဆင်း မှတ်တမ်း", "ခွင့်တိုင်ရန်", "စီမံခန့်ခွဲမှု (Admin)"])
 
-# ၂။ ဝန်ထမ်းစာရင်းကို Sheet1 (သင့် Sheet နာမည်) မှ ယူခြင်း
+# ၂။ ဝန်ထမ်းစာရင်းကို Sheet1 မှ ယူခြင်း
 try:
-    # သင့် Sheet မှာ ဝန်ထမ်းအမည်တွေက Sheet1 ရဲ့ Column A မှာ ရှိရပါမယ်
     emp_data = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range="Sheet1!A:A").execute()
-    employee_list = [row[0] for row in emp_data.get('values', [])[1:]] # ခေါင်းစဉ်ကို ဖယ်ပြီး ယူပါတယ်
-except:
+    employee_list = [row[0] for row in emp_data.get('values', [])[1:]] 
+except Exception as e:
     employee_list = []
 
 if menu == "ရုံးတက် ရုံးဆင်း မှတ်တမ်း":
@@ -41,7 +40,7 @@ if menu == "ရုံးတက် ရုံးဆင်း မှတ်တမ်
             ).execute()
             st.success("မှတ်တမ်းတင်ပြီးပါပြီ။")
     else:
-        st.warning("Sheet1 ထဲမှာ ဝန်ထမ်းအမည်တွေ ရှာမတွေ့ပါ။ Column A မှာ အမည်တွေ ရှိမရှိ စစ်ပေးပါ။")
+        st.warning("Sheet1 (Column A) မှာ ဝန်ထမ်းအမည်တွေ ရှိမရှိ စစ်ပေးပါ။")
 
 elif menu == "ခွင့်တိုင်ရန်":
     st.header("📝 ခွင့်တိုင်ကြားစာ")
@@ -51,7 +50,6 @@ elif menu == "ခွင့်တိုင်ရန်":
         reason = st.text_area("အကြောင်းပြချက်")
         if st.button("ခွင့်တင်မည်"):
             date_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            # Leave_Requests sheet ထဲကို သိမ်းမှာပါ
             sheet.values().append(
                 spreadsheetId=SPREADSHEET_ID, range="Leave_Requests!A:D",
                 valueInputOption="USER_ENTERED", body={'values': [[emp_name, leave_type, reason, date_now]]}
