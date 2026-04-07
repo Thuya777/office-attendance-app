@@ -1,5 +1,4 @@
 import streamlit as st
-import pandas as pd
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from datetime import datetime
@@ -14,35 +13,23 @@ else:
     st.error("Secrets configuration missing!")
     st.stop()
 
-# ပုံ ထဲက သင့်ရဲ့ ID ကို ထည့်ပေးထားပါတယ်
+# ပုံ ထဲက သင့်ရဲ့ ID ပါ
 SPREADSHEET_ID = "1Lnh_L7v7Vds-6WRosRIKXzNSoqANLjgAKRc5VvAIpFs" 
 
 st.sidebar.title("⏰ ဝန်ထမ်း ရုံးတက်/ရုံးဆင်း App")
 menu = st.sidebar.radio("သွားလိုသည့် အပိုင်းကို ရွေးပါ", ["ရုံးတက် ရုံးဆင်း မှတ်တမ်း", "ခွင့်တိုင်ရန်", "စီမံခန့်ခွဲမှု (Admin)"])
 
-# ၂။ ဝန်ထမ်းစာရင်းကို Sheet1 မှ ယူခြင်း
+# ၂။ ဝန်ထမ်းစာရင်းကို Sheet1 (Column A) မှ ယူခြင်း
 try:
+    # ပုံ အရ Sheet1!A:A ကို ဖတ်ပါတယ်
     emp_data = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range="Sheet1!A:A").execute()
-    employee_list = [row[0] for row in emp_data.get('values', [])[1:]] 
+    values = emp_data.get('values', [])
+    employee_list = [row[0] for row in values[1:] if row] 
 except Exception as e:
     employee_list = []
 
-if menu == "ရုံးတက် ရုံးဆင်း မှတ်တမ်း":
-    st.header("📷 ရုံးတက်/ထွက် မှတ်တမ်းတင်ရန်")
-    if employee_list:
-        selected_emp = st.selectbox("ဝန်ထမ်းအမည် ရွေးချယ်ပါ", employee_list)
-        status = st.radio("အခြေအနေ", ["ရုံးတက်", "ရုံးဆင်း"])
-        if st.button("မှတ်တမ်းတင်မည်"):
-            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            sheet.values().append(
-                spreadsheetId=SPREADSHEET_ID, range="Attendance!A:C",
-                valueInputOption="USER_ENTERED", body={'values': [[selected_emp, status, now]]}
-            ).execute()
-            st.success("မှတ်တမ်းတင်ပြီးပါပြီ။")
-    else:
-        st.warning("Sheet1 (Column A) မှာ ဝန်ထမ်းအမည်တွေ ရှိမရှိ စစ်ပေးပါ။")
-
-elif menu == "ခွင့်တိုင်ရန်":
+# --- ၃။ ခွင့်တိုင်ရန် အပိုင်း ---
+if menu == "ခွင့်တိုင်ရန်":
     st.header("📝 ခွင့်တိုင်ကြားစာ")
     if employee_list:
         emp_name = st.selectbox("ဝန်ထမ်းအမည်", employee_list)
@@ -55,20 +42,36 @@ elif menu == "ခွင့်တိုင်ရန်":
                 valueInputOption="USER_ENTERED", body={'values': [[emp_name, leave_type, reason, date_now]]}
             ).execute()
             st.success("ခွင့်တင်ခြင်း အောင်မြင်ပါသည်။")
+    else:
+        st.warning("ဝန်ထမ်းအမည်စာရင်းကို မဖတ်နိုင်ပါ။ Sheet1 ရဲ့ Column A မှာ အမည်တွေ ရှိမရှိ စစ်ပေးပါ။")
 
+# --- ၄။ ရုံးတက်/ဆင်း မှတ်တမ်း ---
+elif menu == "ရုံးတက် ရုံးဆင်း မှတ်တမ်း":
+    st.header("📷 ရုံးတက်/ထွက် မှတ်တမ်းတင်ရန်")
+    if employee_list:
+        selected_emp = st.selectbox("ဝန်ထမ်းအမည် ရွေးချယ်ပါ", employee_list)
+        status = st.radio("အခြေအနေ", ["ရုံးတက်", "ရုံးဆင်း"])
+        if st.button("မှတ်တမ်းတင်မည်"):
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            sheet.values().append(
+                spreadsheetId=SPREADSHEET_ID, range="Attendance!A:C",
+                valueInputOption="USER_ENTERED", body={'values': [[selected_emp, status, now]]}
+            ).execute()
+            st.success(f"မှတ်တမ်းတင်ပြီးပါပြီ။")
+    else:
+        st.warning("ဝန်ထမ်းအမည်စာရင်းကို မဖတ်နိုင်ပါ။")
+
+# --- ၅။ Admin အပိုင်း ---
 elif menu == "စီမံခန့်ခွဲမှု (Admin)":
     pw = st.sidebar.text_input("Password", type="password")
     if pw == "1234":
-        st.subheader("⚙️ စည်းကမ်းချက်များ ပြင်ဆင်ရန်")
+        st.subheader("⚙️ စည်းကမ်းချက်များ")
         try:
             curr = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range="Settings!A1").execute()
             curr_rules = curr.get('values', [[""]])[0][0]
         except: curr_rules = ""
-        
         new_rules = st.text_area("စည်းကမ်းချက်များ", value=curr_rules, height=200)
         if st.button("Update"):
-            sheet.values().update(
-                spreadsheetId=SPREADSHEET_ID, range="Settings!A1",
-                valueInputOption="USER_ENTERED", body={'values': [[new_rules]]}
-            ).execute()
+            sheet.values().update(spreadsheetId=SPREADSHEET_ID, range="Settings!A1",
+                valueInputOption="USER_ENTERED", body={'values': [[new_rules]]}).execute()
             st.success("ပြင်ဆင်ပြီးပါပြီ။")
