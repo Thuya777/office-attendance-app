@@ -14,72 +14,63 @@ else:
     st.error("Secrets configuration missing!")
     st.stop()
 
-SPREADSHEET_ID = "1Lnh_L7v7VDs-6WRosR1KXzNSoqANLjgAKRc5VvAIpFs"
+# ဒီနေရာမှာ ခုနက ID ကို ထည့်ပါ
+SPREADSHEET_ID = "1Lnh_L7v7vDs-6WRosRlKXzNSoqANljgAKRc5VvAIpFs" 
 
-# Sidebar Menu
 st.sidebar.title("⏰ ဝန်ထမ်း ရုံးတက်/ရုံးဆင်း App")
-menu = st.sidebar.radio("သွားလိုသည့် အပိုင်းကို ရွေးပါ", ["ရုံးတက် ရုံးဆင်း မှတ်တမ်း", "စီမံခန့်ခွဲမှု (Admin)"])
+menu = st.sidebar.radio("သွားလိုသည့် အပိုင်းကို ရွေးပါ", ["ရုံးတက် ရုံးဆင်း မှတ်တမ်း", "ခွင့်တိုင်ရန်", "စီမံခန့်ခွဲမှု (Admin)"])
+
+# ၂။ ဝန်ထမ်းစာရင်းကို Sheet1 (သင့် Sheet နာမည်) မှ ယူခြင်း
+try:
+    # သင့် Sheet မှာ ဝန်ထမ်းအမည်တွေက Sheet1 ရဲ့ Column A မှာ ရှိရပါမယ်
+    emp_data = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range="Sheet1!A:A").execute()
+    employee_list = [row[0] for row in emp_data.get('values', [])[1:]] # ခေါင်းစဉ်ကို ဖယ်ပြီး ယူပါတယ်
+except:
+    employee_list = []
 
 if menu == "ရုံးတက် ရုံးဆင်း မှတ်တမ်း":
-    st.header("📷 ဝန်ထမ်းရုံးတက်/ထွက် မှတ်တမ်း")
-    
-    try:
-        # ဝန်ထမ်းစာရင်းကို Employees sheet မှ ယူခြင်း
-        emp_data = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range="Employees!A:B").execute()
-        values = emp_data.get('values', [])
-        if not values:
-            st.warning("ဝန်ထမ်းစာရင်း မရှိသေးပါ။")
-        else:
-            employee_list = [row[0] for row in values[1:]] # First row is header
-            selected_emp = st.selectbox("ဝန်ထမ်းအမည် ရွေးချယ်ပါ", employee_list)
-            status = st.radio("အခြေအနေ", ["ရုံးတက်", "ရုံးဆင်း"])
-            
-            if st.button("မှတ်တမ်းတင်မည်"):
-                now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                new_row = [[selected_emp, status, now]]
-                sheet.values().append(
-                    spreadsheetId=SPREADSHEET_ID,
-                    range="Attendance!A:C",
-                    valueInputOption="USER_ENTERED",
-                    body={'values': new_row}
-                ).execute()
-                st.success(f"{selected_emp} အတွက် {status} မှတ်တမ်း တင်ပြီးပါပြီ။")
-    except Exception as e:
-        st.error(f"Error: {e}")
+    st.header("📷 ရုံးတက်/ထွက် မှတ်တမ်းတင်ရန်")
+    if employee_list:
+        selected_emp = st.selectbox("ဝန်ထမ်းအမည် ရွေးချယ်ပါ", employee_list)
+        status = st.radio("အခြေအနေ", ["ရုံးတက်", "ရုံးဆင်း"])
+        if st.button("မှတ်တမ်းတင်မည်"):
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            sheet.values().append(
+                spreadsheetId=SPREADSHEET_ID, range="Attendance!A:C",
+                valueInputOption="USER_ENTERED", body={'values': [[selected_emp, status, now]]}
+            ).execute()
+            st.success("မှတ်တမ်းတင်ပြီးပါပြီ။")
+    else:
+        st.warning("Sheet1 ထဲမှာ ဝန်ထမ်းအမည်တွေ ရှာမတွေ့ပါ။ Column A မှာ အမည်တွေ ရှိမရှိ စစ်ပေးပါ။")
+
+elif menu == "ခွင့်တိုင်ရန်":
+    st.header("📝 ခွင့်တိုင်ကြားစာ")
+    if employee_list:
+        emp_name = st.selectbox("ဝန်ထမ်းအမည်", employee_list)
+        leave_type = st.selectbox("ခွင့်အမျိုးအစား", ["ရှောင်တခင်ခွင့်", "ဆေးခွင့်", "လုပ်သက်ခွင့်"])
+        reason = st.text_area("အကြောင်းပြချက်")
+        if st.button("ခွင့်တင်မည်"):
+            date_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # Leave_Requests sheet ထဲကို သိမ်းမှာပါ
+            sheet.values().append(
+                spreadsheetId=SPREADSHEET_ID, range="Leave_Requests!A:D",
+                valueInputOption="USER_ENTERED", body={'values': [[emp_name, leave_type, reason, date_now]]}
+            ).execute()
+            st.success("ခွင့်တင်ခြင်း အောင်မြင်ပါသည်။")
 
 elif menu == "စီမံခန့်ခွဲမှု (Admin)":
-    password = st.sidebar.text_input("Admin Password", type="password")
-    if password == "1234":  # စကားဝှက်ကို ဒီမှာ ပြောင်းနိုင်ပါတယ်
-        tab1, tab2 = st.tabs(["ဝန်ထမ်းအသစ်ထည့်ရန်", "စည်းကမ်းချက်များ"])
+    pw = st.sidebar.text_input("Password", type="password")
+    if pw == "1234":
+        st.subheader("⚙️ စည်းကမ်းချက်များ ပြင်ဆင်ရန်")
+        try:
+            curr = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range="Settings!A1").execute()
+            curr_rules = curr.get('values', [[""]])[0][0]
+        except: curr_rules = ""
         
-        with tab1:
-            new_name = st.text_input("ဝန်ထမ်းအမည်")
-            if st.button("ဝန်ထမ်းအသစ် သိမ်းမည်"):
-                if new_name:
-                    sheet.values().append(
-                        spreadsheetId=SPREADSHEET_ID,
-                        range="Employees!A:A",
-                        valueInputOption="USER_ENTERED",
-                        body={'values': [[new_name]]}
-                    ).execute()
-                    st.success(f"{new_name} ကို ထည့်သွင်းပြီးပါပြီ။")
-        
-        with tab2:
-            st.subheader("⚙️ စည်းကမ်းချက်များ ပြင်ဆင်ရန်")
-            try:
-                curr_sett = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range="Settings!A1").execute()
-                curr_rules = curr_sett.get('values', [[""]])[0][0]
-            except:
-                curr_rules = ""
-            
-            new_rules = st.text_area("စည်းကမ်းချက်များ", value=curr_rules, height=200)
-            if st.button("Update Rules"):
-                sheet.values().update(
-                    spreadsheetId=SPREADSHEET_ID,
-                    range="Settings!A1",
-                    valueInputOption="USER_ENTERED",
-                    body={'values': [[new_rules]]}
-                ).execute()
-                st.success("စည်းကမ်းချက်များ ပြင်ဆင်ပြီးပါပြီ။")
-    elif password != "":
-        st.sidebar.error("Password မှားယွင်းနေပါသည်။")
+        new_rules = st.text_area("စည်းကမ်းချက်များ", value=curr_rules, height=200)
+        if st.button("Update"):
+            sheet.values().update(
+                spreadsheetId=SPREADSHEET_ID, range="Settings!A1",
+                valueInputOption="USER_ENTERED", body={'values': [[new_rules]]}
+            ).execute()
+            st.success("ပြင်ဆင်ပြီးပါပြီ။")
