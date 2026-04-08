@@ -62,15 +62,13 @@ elif menu == "ခွင့်တိုင်ကြားခြင်း":
             ).execute()
             st.success("ခွင့်တင်ပြီးပါပြီ။")
 
-# --- ၅။ Admin Panel (အခု ပျောက်နေသည့် နေရာကို ပြန်ထည့်ထားသည်) ---
+# --- ၅။ Admin Panel ---
 elif menu == "Admin Panel":
     st.header("🔐 စီမံခန့်ခွဲသူ")
     pw = st.text_input("Admin Password ရိုက်ပါ", type="password")
     
     if pw == "1234":
         st.success("Admin Login အောင်မြင်ပါသည်။")
-        
-        # ဒီ Menu လေး ၂ ခု ပျောက်နေတာပါဗျာ
         admin_task = st.radio("ဘာလုပ်ဆောင်လိုပါသလဲ", ["ဝန်ထမ်းအသစ်ထည့်ရန်", "စည်းကမ်းချက်ပြင်ရန်"])
         
         if admin_task == "ဝန်ထမ်းအသစ်ထည့်ရန်":
@@ -83,7 +81,6 @@ elif menu == "Admin Panel":
                         valueInputOption="USER_ENTERED", body={'values': [[new_name]]}
                     ).execute()
                     st.success(f"{new_name} ကို ထည့်ပြီးပါပြီ။")
-                    st.rerun() # စာရင်းချက်ချင်း Update ဖြစ်အောင်ပါ
         
         elif admin_task == "စည်းကမ်းချက်ပြင်ရန်":
             st.subheader("📜 စည်းကမ်းချက်များ")
